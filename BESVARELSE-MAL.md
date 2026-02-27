@@ -1,10 +1,10 @@
 # Besvarelse - Refleksjon og Analyse
 
-**Student:** [Ditt navn]
+**Student:** Tore Kristoffer Ølberg
 
-**Studentnummer:** [Ditt studentnummer]
+**Studentnummer:** 0689
 
-**Dato:** [Innleveringsdato]
+**Dato:** 01.03.26
 
 ---
 
@@ -14,11 +14,27 @@
 
 **Identifiserte entiteter:**
 
-[Skriv ditt svar her - list opp alle entitetene du har identifisert]
+Kunde, sykkel, stasjon, lås og utleie
+
+Disse entitetene representerer de viktigste objektene systemet må holde informasjon om. Systemet må lagre hvem som leier sykler (kunde), hvilke sykler som finnes (sykkel), hvor de befinner seg (stasjon og lås), samt informasjon om leieforholdet (utleie).
+
 
 **Attributter for hver entitet:**
 
-[Skriv ditt svar her - list opp attributtene for hver entitet]
+Kunde: kunde_id, fornavn, etternavn, mobilnummer, epost
+En kunde må kunne identifiseres entydig i systemet og det må lagres kontaktinformasjon.
+
+Sykkel: sykkel_id, tatt_i_bruk_dato, stasjon_id, lås_id
+Hver sykkel har en unik ID. I tillegg lagres hvilken stasjon og lås den står på.
+
+Stasjon: stasjon_id, navn, adresse
+En stasjon må kunne identifiseres og ha et navn og en fysisk plassering.
+
+Lås: lås_id, stasjon_id
+Hver lås tilhører en bestemt stasjon, og en stasjon kan ha mange låser.
+
+Utleie: utleie_id, kunde_id, sykkel_id, start_tid, slutt_tid, beløp
+Utleie representerer selve leieforholdet. Den kobler en kunde til en sykkel over et tidsintervall.
 
 ---
 
@@ -26,15 +42,75 @@
 
 **Valgte datatyper og begrunnelser:**
 
-[Skriv ditt svar her - forklar hvilke datatyper du har valgt for hver attributt og hvorfor]
+For primærnøkler er det brukt SERIAL, slik at PostgreSQL automatisk genererer unike ID-er.
+
+Navn og adresse: VARCHAR, fordi lengden varierer og det er tekstfelt.
+
+Mobilnummer: VARCHAR, siden det kan inneholde et plusstegn.
+
+Dato for sykkel tatt i bruk: DATE, fordi vi kun trenger dato.
+
+Start- og sluttid: TIMESTAMP, siden både dato og klokkeslett må lagres.
+
+Beløp: NUMERIC, for presis lagring av penger.
+
 
 **`CHECK`-constraints:**
 
-[Skriv ditt svar her - list opp alle CHECK-constraints du har lagt til og forklar hvorfor de er nødvendige]
+Mobilnummer:
+Sikrer at feltet kun inneholder tall.
+
+E-post:
+Enkel sjekk for at verdien inneholder @.
+
+Beløp:
+Sikrer at beløpet ikke kan være negativt.
+
+Dette gjør at ugyldige verdier stoppes på databasenivå.
 
 **ER-diagram:**
 
-[Legg inn mermaid-kode eller eventuelt en bildefil fra `mermaid.live` her]
+erDiagram
+
+    KUNDE {
+        int kunde_id 
+        varchar fornavn
+        varchar etternavn
+        varchar mobilnummer
+        varchar epost
+    }
+
+    STASJON {
+        int stasjon_id 
+        varchar navn
+        varchar adresse
+    }
+
+    LAS {
+        int las_id 
+        int stasjon_id 
+    }
+
+    SYKKEL {
+        int sykkel_id 
+        date tatt_i_bruk_dato
+        int stasjon_id 
+        int las_id 
+    }
+
+    UTLEIE {
+        int utleie_id 
+        int kunde_id 
+        int sykkel_id 
+        datetime start_tid
+        datetime slutt_tid
+        float belop
+    }
+
+    KUNDE ||--o{ UTLEIE : har
+    SYKKEL ||--o{ UTLEIE : gjelder
+    STASJON ||--o{ LAS : inneholder
+    STASJON ||--o{ SYKKEL : har
 
 ---
 
@@ -42,15 +118,61 @@
 
 **Valgte primærnøkler og begrunnelser:**
 
-[Skriv ditt svar her - forklar hvilke primærnøkler du har valgt for hver entitet og hvorfor]
+Alle entitetene har fått en egen primærnøkkel:
+
+kunde_id, stasjon_id, lås_id, sykkel_id og utleie_id
+
+Jeg har valgt å bruke surrogatnøkler (SERIAL) fremfor naturlige nøkler. For eksempel kunne mobilnummer vært brukt som primærnøkkel for kunde, men dette er ikke alltid optimalt siden mobilnummer kan endres. Surrogatnøkler gir større fleksibilitet og gjør relasjoner enklere å håndtere.
+
 
 **Naturlige vs. surrogatnøkler:**
 
-[Skriv ditt svar her - diskuter om du har brukt naturlige eller surrogatnøkler og hvorfor]
+Jeg har valgt å bruke surrogatnøkler som primærnøkler fordi de er stabile, enkle og gir bedre ytelse. Naturlige nøkler som e-post eller mobilnummer kan endre seg, og brukes dermed heller med UNIQUE-constraints.
 
 **Oppdatert ER-diagram:**
 
-[Legg inn mermaid-kode eller eventuelt en bildefil fra `mermaid.live` her]
+erDiagram
+
+    KUNDE {
+        int kunde_id PK
+        varchar fornavn
+        varchar etternavn
+        varchar mobilnummer
+        varchar epost
+    }
+
+    STASJON {
+        int stasjon_id PK
+        varchar navn
+        varchar adresse
+    }
+
+    LAS {
+        int las_id PK
+        int stasjon_id 
+    }
+
+    SYKKEL {
+        int sykkel_id PK
+        date tatt_i_bruk_dato
+        int stasjon_id 
+        int las_id 
+    }
+
+    UTLEIE {
+        int utleie_id PK
+        int kunde_id 
+        int sykkel_id 
+        datetime start_tid
+        datetime slutt_tid
+        float belop
+    }
+
+    KUNDE ||--o{ UTLEIE : har
+    SYKKEL ||--o{ UTLEIE : gjelder
+    STASJON ||--o{ LAS : inneholder
+    STASJON ||--o{ SYKKEL : har
+
 
 ---
 
@@ -58,15 +180,71 @@
 
 **Identifiserte forhold og kardinalitet:**
 
-[Skriv ditt svar her - list opp alle forholdene mellom entitetene og angi kardinalitet]
+En kunde kan ha mange utleier, 1:N
+
+En sykkel kan være med i mange utleier over tid, 1:N
+
+En stasjon har mange låser, 1:N
+
+En stasjon har mange sykler, 1:N
 
 **Fremmednøkler:**
 
-[Skriv ditt svar her - list opp alle fremmednøklene og forklar hvordan de implementerer forholdene]
+utleie.kunde_id - kunde.kunde_id
+
+utleie.sykkel_id - sykkel.sykkel_id
+
+lås.stasjon_id - stasjon.stasjon_id
+
+sykkel.stasjon_id - stasjon.stasjon_id
+
+sykkel.lås_id - lås.lås_id
+
+Dette fører til referanseintegritet mellom tabellene.
 
 **Oppdatert ER-diagram:**
 
-[Legg inn mermaid-kode eller eventuelt en bildefil fra `mermaid.live` her]
+erDiagram
+
+    KUNDE {
+        int kunde_id PK
+        varchar fornavn
+        varchar etternavn
+        varchar mobilnummer
+        varchar epost
+    }
+
+    STASJON {
+        int stasjon_id PK
+        varchar navn
+        varchar adresse
+    }
+
+    LAS {
+        int las_id PK
+        int stasjon_id FK
+    }
+
+    SYKKEL {
+        int sykkel_id PK
+        date tatt_i_bruk_dato
+        int stasjon_id FK
+        int las_id FK
+    }
+
+    UTLEIE {
+        int utleie_id PK
+        int kunde_id FK
+        int sykkel_id FK
+        datetime start_tid
+        datetime slutt_tid
+        float belop
+    }
+
+    KUNDE ||--o{ UTLEIE : har
+    SYKKEL ||--o{ UTLEIE : gjelder
+    STASJON ||--o{ LAS : inneholder
+    STASJON ||--o{ SYKKEL : har
 
 ---
 
@@ -74,19 +252,19 @@
 
 **Vurdering av 1. normalform (1NF):**
 
-[Skriv ditt svar her - forklar om datamodellen din tilfredsstiller 1NF og hvorfor]
+Modellen tilfredsstiller 1NF fordi det finnes ingen gjentatte grupper eller lister i en kolonne.
 
 **Vurdering av 2. normalform (2NF):**
 
-[Skriv ditt svar her - forklar om datamodellen din tilfredsstiller 2NF og hvorfor]
+Alle tabeller har én enkel primærnøkkel, og ingen attributter er avhengige av en sammensatt nøkkel. Derfor er modellen på 2NF.
 
 **Vurdering av 3. normalform (3NF):**
 
-[Skriv ditt svar her - forklar om datamodellen din tilfredsstiller 3NF og hvorfor]
+Det finnes ingen avhengigheter. For eksempel lagres ikke kundenavn i utleie tabellen, kun en fremmednøkkel til kunde. Dermed unngås unødvendig lagring av den samme dataen og modellen tilfredsstiller 3NF.
 
 **Eventuelle justeringer:**
 
-[Skriv ditt svar her - hvis modellen ikke var på 3NF, forklar hvilke justeringer du har gjort]
+Jeg gjorde ingen justeringer.
 
 ---
 
@@ -96,15 +274,15 @@
 
 **Plassering av SQL-skript:**
 
-[Bekreft at du har lagt SQL-skriptet i `init-scripts/01-init-database.sql`]
+Jeg bekrefter at jeg har lagt SQL-skriptet i `init-scripts/01-init-database.sql`
 
 **Antall testdata:**
 
-- Kunder: [antall]
-- Sykler: [antall]
-- Sykkelstasjoner: [antall]
-- Låser: [antall]
-- Utleier: [antall]
+- Kunder: 5
+- Sykler: 100
+- Sykkelstasjoner: 5
+- Låser: 100
+- Utleier: 50
 
 ---
 
