@@ -290,7 +290,21 @@ Jeg bekrefter at jeg har lagt SQL-skriptet i `init-scripts/01-init-database.sql`
 
 **Dokumentasjon av vellykket kjøring:**
 
-[Skriv ditt svar her - f.eks. skjermbilder eller output fra terminalen som viser at databasen ble opprettet uten feil]
+data1500-postgres  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-database.sql                                                                                                          
+data1500-postgres  | CREATE TABLE
+data1500-postgres  | CREATE TABLE
+data1500-postgres  | CREATE TABLE                                                                             
+data1500-postgres  | CREATE TABLE                                                                             
+data1500-postgres  | CREATE TABLE
+data1500-postgres  | INSERT 0 5
+data1500-postgres  | INSERT 0 5                                                                               
+data1500-postgres  | INSERT 0 100                                                                             
+data1500-postgres  | INSERT 0 100
+data1500-postgres  | INSERT 0 50                                                                              
+data1500-postgres  |          status         
+data1500-postgres  | ------------------------                                                                 
+data1500-postgres  |  Database initialisert!                                                                  
+data1500-postgres  | (1 row)                                                                           
 
 **Spørring mot systemkatalogen:**
 
@@ -305,7 +319,19 @@ ORDER BY table_name;
 **Resultat:**
 
 ```
-[Skriv resultatet av spørringen her - list opp alle tabellene som ble opprettet]
+oblig01=# SELECT table_name 
+oblig01-# FROM information_schema.tables 
+oblig01-# WHERE table_schema = 'public'
+oblig01-#   AND table_type = 'BASE TABLE'
+oblig01-# ORDER BY table_name;
+ table_name 
+------------
+ kunde
+ las
+ stasjon
+ sykkel
+ utleie
+(5 rows)
 ```
 
 ---
@@ -317,19 +343,22 @@ ORDER BY table_name;
 **SQL for å opprette rolle:**
 
 ```sql
-[Skriv din SQL-kode for å opprette rollen 'kunde' her]
+CREATE ROLE kunde NOINHERIT;
 ```
 
 **SQL for å opprette bruker:**
 
 ```sql
-[Skriv din SQL-kode for å opprette brukeren 'kunde_1' her]
+CREATE USER kunde_1 WITH PASSWORD 'kunde1';
+GRANT kunde TO kunde_1;
 ```
 
 **SQL for å tildele rettigheter:**
 
 ```sql
-[Skriv din SQL-kode for å tildele rettigheter til rollen her]
+GRANT CONNECT ON DATABASE oblig01 TO kunde;
+GRANT USAGE ON SCHEMA public TO kunde;
+GRANT SELECT ON kunde, sykkel, stasjon, utleie TO kunde;
 ```
 
 ---
@@ -339,12 +368,17 @@ ORDER BY table_name;
 **SQL for VIEW:**
 
 ```sql
-[Skriv din SQL-kode for VIEW her]
+CREATE VIEW mine_utleier AS
+SELECT u.*
+FROM utleie u
+JOIN kunde k ON u.kunde_id = k.kunde_id
+WHERE k.epost = current_user || '@example.com';
+GRANT SELECT ON mine_utleier TO kunde;
 ```
 
 **Ulempe med VIEW vs. POLICIES:**
 
-[Skriv ditt svar her - diskuter minst én ulempe med å bruke VIEW for autorisasjon sammenlignet med POLICIES]
+En ulempe med å bruke VIEW for autorisasjon sammenlignet med POLICIES er at VIEW ikke gir ekte radbasert sikkerhet, men kun skjuler data gjennom en forhåndsdefinert spørring.
 
 ---
 
@@ -360,15 +394,19 @@ ORDER BY table_name;
 
 **Totalt antall utleier per år:**
 
-[Skriv din utregning her]
+5 × 20000 = 100000
+4 × 5000 = 20000
+3 × 500 = 1500
+
+100000 + 20000 + 1500 = 121500
 
 **Estimat for lagringskapasitet:**
 
-[Skriv din utregning her - vis hvordan du har beregnet lagringskapasiteten for hver tabell]
+Usikker på denne
 
 **Totalt for første år:**
 
-[Skriv ditt estimat her]
+Usikker på denne
 
 ---
 
@@ -378,31 +416,44 @@ ORDER BY table_name;
 
 **Problem 1: Redundans**
 
-[Skriv ditt svar her - gi konkrete eksempler fra CSV-filen som viser redundans]
+I en CSV-fil vil informasjon om kunde, sykkel og stasjon gjentas i hver rad for hver utleie.
+For eksempel vil samme navn, e-post og mobilnummer lagres mange ganger dersom kunden leier flere ganger.
 
 **Problem 2: Inkonsistens**
 
-[Skriv ditt svar her - forklar hvordan redundans kan føre til inkonsistens med eksempler]
+Dersom en kunde endrer e-post, må alle rader i CSV-filen oppdateres.
+Hvis noen rader ikke oppdateres, får man ikke konsistente data.
 
 **Problem 3: Oppdateringsanomalier**
 
-[Skriv ditt svar her - diskuter slette-, innsettings- og oppdateringsanomalier]
+Sletteanomali:
+Hvis man sletter siste utleie for en kunde, mister man også kundeinformasjonen.
+
+Innsettingsanomali:
+Man kan ikke registrere en kunde uten at det finnes en utleie.
+
+Oppdateringsanomali:
+Endring av kundedata må gjøres mange steder.
 
 **Fordeler med en indeks:**
 
-[Skriv ditt svar her - forklar hvorfor en indeks ville gjort spørringen mer effektiv]
+En indeks gjør at databasen kan finne rader uten å skanne hele tabellen.
 
 **Case 1: Indeks passer i RAM**
 
-[Skriv ditt svar her - forklar hvordan indeksen fungerer når den passer i minnet]
+Når indeksen ligger i minnet, kan databasen navigere direkte i trestrukturen uten diskoppslag.
 
 **Case 2: Indeks passer ikke i RAM**
 
-[Skriv ditt svar her - forklar hvordan flettesortering kan brukes]
+Hvis indeksen er større enn tilgjengelig minne, så må deler leses fra disk.
 
 **Datastrukturer i DBMS:**
 
-[Skriv ditt svar her - diskuter B+-tre og hash-indekser]
+B+-tre:
+Brukes som regel i databaser fordi det gir effektiv søk, innsetting og sletting i O(log n).
+
+Hash-indeks:
+Gir svært rask oppslagstid (O(1)) ved riktig treff, men fungerer dårlig for intervallsøk.
 
 ---
 
@@ -410,17 +461,17 @@ ORDER BY table_name;
 
 **Foreslått datastruktur:**
 
-[Skriv ditt svar her - f.eks. heap-fil, LSM-tree, eller annen egnet datastruktur]
+LSM-tree
 
 **Begrunnelse:**
 
 **Skrive-operasjoner:**
 
-[Skriv ditt svar her - forklar hvorfor datastrukturen er egnet for mange skrive-operasjoner]
+LSM-tree er optimalisert for mange skriveoperasjoner.
 
 **Lese-operasjoner:**
 
-[Skriv ditt svar her - forklar hvordan datastrukturen håndterer sjeldne lese-operasjoner]
+Lesing kan være tregere enn B+-tre, men siden leseoperasjoner ikke skjer så altor ofte i dette tilfellet, derfor er dette akseptabelt.
 
 ---
 
@@ -428,23 +479,26 @@ ORDER BY table_name;
 
 **Hvor bør validering gjøres:**
 
-[Skriv ditt svar her - argumenter for validering i ett eller flere lag]
+Validering bør gjøres i flere lag slik som i nettleseren, i applikasjonslaget og i databasen.
 
 **Validering i nettleseren:**
 
-[Skriv ditt svar her - diskuter fordeler og ulemper]
+Fordel: Rask tilbakemelding til bruker
+Ulempe: Ikke sikkerhetsmekanisme alene
 
 **Validering i applikasjonslaget:**
 
-[Skriv ditt svar her - diskuter fordeler og ulemper]
+Fordel: Kan håndtere komplekse regler
+Ulempe: Beskytter ikke mot direkte database-tilgang
 
 **Validering i databasen:**
 
-[Skriv ditt svar her - diskuter fordeler og ulemper]
+Fordel: Garanterer dataintegritet
+Ulempe: Mindre fleksibel
 
 **Konklusjon:**
 
-[Skriv ditt svar her - oppsummer hvor validering bør gjøres og hvorfor]
+Validering bør implementeres i alle lag. Databasen bør håndheve grunnleggende constraints, mens applikasjonslaget håndterer forretningsregler og nettleseren gir brukervennlig validering.
 
 ---
 
@@ -452,21 +506,21 @@ ORDER BY table_name;
 
 **Hva har du lært så langt i emnet:**
 
-[Skriv din refleksjon her - diskuter sentrale konsepter du har lært]
+Jeg har lært å designe og implementere en database med riktig bruk av nøkler, constraints og SQL.
 
 **Hvordan har denne oppgaven bidratt til å oppnå læringsmålene:**
 
-[Skriv din refleksjon her - koble oppgaven til læringsmålene i emnet]
+Oppgaven ga praktisk erfaring med databasedesign, implementering og analyse av lagring og ytelse.
 
 Se oversikt over læringsmålene i en PDF-fil i Canvas https://oslomet.instructure.com/courses/33293/files/folder/Plan%20v%C3%A5ren%202026?preview=4370886
 
 **Hva var mest utfordrende:**
 
-[Skriv din refleksjon her - diskuter hvilke deler av oppgaven som var mest krevende]
+Det mest utfordrende var å forstå sammenhengen mellom tabellene og få til riktige relasjoner med primær og fremmednøkler. I tillegg var det litt krevende å skrive korrekt SQL og samtidig sikre at constraints fungerte.
 
 **Hva har du lært om databasedesign:**
 
-[Skriv din refleksjon her - reflekter over prosessen med å designe en database fra bunnen av]
+Jeg har lært at god struktur og normalisering er avgjørende for å sikre konsistente og effektive databaser.
 
 ---
 
@@ -474,7 +528,7 @@ Se oversikt over læringsmålene i en PDF-fil i Canvas https://oslomet.instructu
 
 **Plassering av SQL-spørringer:**
 
-[Bekreft at du har lagt SQL-spørringene i `test-scripts/queries.sql`]
+Jeg bekrefter at jeg har lagt SQL-spørringene i `test-scripts/queries.sql
 
 
 **Eventuelle feil og rettelser:**
